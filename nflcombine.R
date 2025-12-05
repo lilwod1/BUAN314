@@ -38,7 +38,7 @@ pairs(nfl_A[,c(7,8,9,10,11,12,13,15)])
 cor_B <- cor(nfl_B[,c(7,8,9,10,11,12,13,15)]) 
 pairs(nfl_B[,c(7,8,9,10,11,12,13,15)])
 
-#join nfl_A and nfl_B to create a data frame with both drafted and undrafted players
+#join nfl_A and nfl_B to create a clean data frame with both drafted and undrafted players
 nfl_C <- sqldf('
       SELECT *
       FROM nfl_A
@@ -51,6 +51,10 @@ nfl_C <- sqldf('
 nfl_C$Drafted[nfl_C$Drafted=='True']<-1
 nfl_C$Drafted[nfl_C$Drafted=='False']<-0
 
+##############################
+#####DESCRIPTIVE ANALYSIS#####
+##############################
+#create scatter plots comparing player metrics
 ggplot(nfl_C, aes(x=Weight, y=X40yd,color=Drafted))+
   geom_jitter()+
   geom_smooth(aes())
