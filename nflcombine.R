@@ -57,7 +57,8 @@ nfl_C$Drafted[nfl_C$Drafted=='False']<-0
 #create scatter plots comparing player metrics
 ggplot(nfl_C, aes(x=Weight, y=X40yd,color=Drafted))+
   geom_jitter()+
-  geom_smooth(aes())
+  geom_smooth(aes())+
+  facet_wrap(vars(Pos))
 
 ggplot(nfl_C, aes(x=height_total_in, y=Vertical,color=Drafted))+
   geom_jitter()+
