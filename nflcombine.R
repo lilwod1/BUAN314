@@ -8,6 +8,9 @@ nfl_combine <- read.csv("nfl_combine_2010_to_2023.csv", header = TRUE)
 #######################
 #####DATA CLEANING#####
 #######################
+#rename Broad.Jump column
+names(nfl_combine)[names(nfl_combine)=='Broad.Jump'] <- 'BroadJump'
+
 #create a data frame without ANY null values in any column (ONLY players who were drafted)
 nfl_A<-na.omit(nfl_combine)
 #create a data frame with ONLY players who were NOT drafted
@@ -89,6 +92,103 @@ nfl_C$Drafted[nfl_C$Drafted=='False']<-0
 ##############################
 #####DESCRIPTIVE ANALYSIS#####
 ##############################
+#run queries to learn more about data structure
+sqldf("SELECT PositionGroup, COUNT(*) AS Count
+       FROM nfl_combine
+       GROUP BY PositionGroup;")
+
+sqldf("SELECT PositionGroup, COUNT(*) AS Count
+       FROM nfl_C
+       GROUP BY PositionGroup;")
+
+#summary statistics query
+summary_stats<-sqldf("
+  SELECT 
+    MIN(X40yd), 
+    MAX(X40yd),
+    AVG(X40yd),
+    MIN(Vertical),
+    MAX(Vertical),
+    AVG(Vertical),
+    MIN(X3Cone),
+    MAX(X3Cone),
+    AVG(X3Cone)
+  FROM nfl_C;
+")
+
+#compare average strength across position groups - query
+sqldf("
+  SELECT PositionGroup, AVG(Bench) AS AvgBench
+  FROM nfl_C
+  GROUP BY PositionGroup
+  ORDER BY AvgBench DESC;
+")
+
+sqldf("
+  SELECT PositionGroup, AVG(Bench) AS AvgBench
+  FROM nfl_A
+  GROUP BY PositionGroup
+  ORDER BY AvgBench DESC;
+")
+
+#compare average metrics between WR, DB, RB
+sqldf("
+  SELECT PositionGroup, 
+         AVG(X40yd) AS Avg40,
+         AVG(Vertical) AS AvgVertical,
+         AVG(Bench) AS AvgBench,
+         AVG(Shuttle) AS AvgShuttle,
+         AVG(X3Cone) AS AvgThreeCone
+  FROM nfl_C
+  WHERE PositionGroup IN ('RB', 'WR', 'DB')
+  GROUP BY PositionGroup;
+")
+
+#list the fastest OLINE/DLINE players, showing if they were drafted or not
+sqldf("
+      SELECT PositionGroup, Drafted,X40yd
+      FROM nfl_C
+      WHERE PositionGroup IN ('OLINE','DLINE')
+      ORDER BY PositionGroup DESC
+      LIMIT 15
+")
+
+#Which position group is the overall most explosive?
+sqldf("
+  SELECT PositionGroup,
+         AVG(Vertical) AS AvgVertical,
+         AVG(BroadJump) AS AvgBroad
+  FROM nfl_A
+  GROUP BY PositionGroup
+  ORDER BY AvgVertical DESC;
+")
+
+#athletic score 2023
+sqldf("
+  SELECT Player, PositionGroup,Drafted,Year,
+         ( (1/X40yd) * 100 
+           + Vertical 
+           + BroadJump 
+           + (25 - X3Cone) 
+         ) AS AthleticScore
+  FROM nfl_combine
+  WHERE Year=2023
+  ORDER BY AthleticScore DESC
+  LIMIT 15;
+")
+
+#explosiveness score - based on vertical and broad jump
+sqldf("
+  SELECT Player, PositionGroup,Drafted,
+         (Vertical) + BroadJump AS ExplosivenessScore
+  FROM nfl_C
+  ORDER BY ExplosivenessScore DESC
+  LIMIT 20;
+")
+
+
+
+
 #create scatter plots comparing player metrics
 ggplot(nfl_C, aes(x=Weight, y=X40yd,color=Drafted))+
   geom_jitter()+
@@ -181,12 +281,10 @@ library(sqldf)
 nfl_subset1 <- sqldf("
   SELECT *
   FROM nfl_C
-  WHERE Position IN ('RB', 'WR', 'DB')
+  WHERE PositionGroup IN ('RB', 'WR', 'DB')
 ")
 
-
-
-ggplot(nfl_C, aes(X40yd, fill = PositionGroup)) +
+ggplot(nfl_subset1, aes(Vertical, fill = PositionGroup)) +
   geom_density(alpha = 0.4)
 
 
