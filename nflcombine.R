@@ -186,9 +186,6 @@ sqldf("
   LIMIT 20;
 ")
 
-
-
-
 #create scatter plots comparing player metrics
 ggplot(nfl_C, aes(x=Weight, y=X40yd,color=Drafted))+
   geom_jitter()+
@@ -288,9 +285,55 @@ ggplot(nfl_subset1, aes(Vertical, fill = PositionGroup)) +
   geom_density(alpha = 0.4)
 
 
+##################
+#####MODELING#####
+##################
 
+model <- lm(X3Cone ~ X40yd + Shuttle, data=nfl_C)
+summary(model)
 
+#actual vs. predicted plot - speed drills
+ggplot(data = data.frame(fitted = model$fitted.values,
+                         residuals = nfl_C$X3Cone))+
+  geom_point(aes(x=fitted, y=residuals))+
+  labs(x="Predicted",y="Actual",title="Actual vs. Predicted Plot")
 
+#use a query to join nfl_C with nfl_combine Round and Pick
+nfl_drafted <- sqldf("
+  SELECT a.*, nc.Round, nc.Pick
+  FROM nfl_A a
+  LEFT JOIN (SELECT Pos, Player, Round, Pick 
+            FROM nfl_combine) nc
+  ON nc.Pos = a.Pos AND nc.Player = a.Player;
+")
 
+#select only WRs (for analysis later)
+nfl_drafted_wr <- sqldf("
+  SELECT *
+  FROM nfl_drafted
+  WHERE Pos='WR'")
 
+#WR draft model - what pick overall would they be based off their metrics
+draft_model <- lm(Pick ~ Weight+X40yd+Vertical+Bench+BroadJump+X3Cone+Shuttle, data=nfl_drafted_wr)
 
+summary(draft_model)
+
+#actual vs. Predicted Plot
+ggplot(data = data.frame(fitted = draft_model$fitted.values,
+                         residuals = nfl_drafted_wr$Pick)) +
+  geom_point(aes(x = fitted, y = residuals)) +
+  labs(x = "Predicted", 
+       y = "Actual",
+       title= "Actual vs. Predicted Plot")
+
+#ONLY LOOKING AT 40YD
+draft_model40 <- lm(Pick ~ X40yd, data=nfl_drafted_wr)
+summary(draft_model40)
+
+#actual vs. Predicted Plot
+ggplot(data = data.frame(fitted = draft_model40$fitted.values,
+                         residuals = nfl_drafted_wr$Pick)) +
+  geom_point(aes(x = fitted, y = residuals)) +
+  labs(x = "Predicted", 
+       y = "Actual",
+       title= "Actual vs. Predicted Plot")
