@@ -337,3 +337,6 @@ ggplot(data = data.frame(fitted = draft_model40$fitted.values,
   labs(x = "Predicted", 
        y = "Actual",
        title= "Actual vs. Predicted Plot")
+
+#save nfl_C as a tidy csv 
+write.csv(nfl_C,"tidy_data.csv",row.names = FALSE)
